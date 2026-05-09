@@ -88,6 +88,25 @@ def _chat_search_query(question: str) -> str:
     return q
 
 
+@app.get("/")
+def root() -> dict[str, Any]:
+    """Avoid 404 when visiting the API base URL in a browser (Render smoke check)."""
+    return {
+        "service": "filings-memory-agent",
+        "message": "API is running. This service has no HTML homepage.",
+        "health": "/health",
+        "docs": "/docs",
+        "example_endpoints": [
+            "GET /health",
+            "GET /api/filings/AAPL",
+            "GET /api/metrics/AAPL",
+            "GET /api/analysis/AAPL",
+            "POST /api/ingest?ticker=AAPL",
+            "POST /api/ask",
+        ],
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "filings-memory-agent"}
