@@ -1,0 +1,35 @@
+# Render Blueprint — set NEXT_PUBLIC_API_URL to your backend URL after first deploy.
+services:
+  - type: web
+    name: filings-memory-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: HYDRADB_API_KEY
+        sync: false
+      - key: HYDRADB_BASE_URL
+        value: https://api.hydradb.com
+      - key: HYDRADB_TENANT_ID
+        sync: false
+      # Optional first-time ingest: set HYDRADB_DEFAULT_SUB_TENANT_ID or HYDRADB_SUB_TENANT_ID to e.g. filings
+      - key: PIPESHIFT_API_KEY
+        sync: false
+      # Recommended for SEC data.sec.gov / www.sec.gov: "YourApp/1.0 (you@company.com)"
+      - key: SEC_USER_AGENT
+        sync: false
+
+  - type: web
+    name: filings-memory-web
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
