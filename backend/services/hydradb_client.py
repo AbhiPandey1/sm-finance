@@ -689,7 +689,7 @@ def append_chat_turn_hydradb(
 
     if _hydradb_sdk_available():
         try:
-            from hydra_db import HydraDB  # type: ignore[import-untyped]
+            from hydra_db import HydraDB, MemoryItem, UserAssistantPair  # type: ignore[import-untyped]
 
             token = (
                 os.getenv("HYDRADB_API_KEY")
@@ -697,20 +697,23 @@ def append_chat_turn_hydradb(
                 or os.getenv("HYDRA_API_KEY")
             )
             client = HydraDB(token=token or "")
-            # SDK: user_memory.add (see https://docs.hydradb.com/api-reference/sdks)
-            client.user_memory.add(
-                tenant_id=tenant_id,
-                sub_tenant_id=sub_tenant_id or "",
-                upsert=True,
-                memories=[
-                    {
-                        "user_assistant_pairs": [{"user": user_text, "assistant": assistant_text}],
-                        "infer": False,
-                        "user_name": f"filings_chat:{conversation_id}",
-                        "custom_instructions": f"SEC filings chat; ticker={ticker}; session={conversation_id}",
-                    }
+            # SDK ≥0.1.6: POST /memories/add_memory via upload.add_memory (not user_memory)
+            mem = MemoryItem(
+                user_assistant_pairs=[
+                    UserAssistantPair(user=user_text, assistant=assistant_text)
                 ],
+                infer=False,
+                user_name=f"filings_chat:{conversation_id}",
+                custom_instructions=f"SEC filings chat; ticker={ticker}; session={conversation_id}",
             )
+            kw: dict[str, Any] = {
+                "tenant_id": tenant_id,
+                "upsert": True,
+                "memories": [mem],
+            }
+            if sub_tenant_id:
+                kw["sub_tenant_id"] = sub_tenant_id
+            client.upload.add_memory(**kw)
             log.info("HydraDB add_memory (chat) ok session=%s", conversation_id[:8])
             return True, None
         except Exception as e:
